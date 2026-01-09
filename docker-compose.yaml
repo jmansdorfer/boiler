@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  boilbot:
+    build: .
+    container_name: discord-boil-bot
+    restart: unless-stopped
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+    volumes:
+      - ./template_boiling.gif:/app/template_boiling.gif
+      - ./temp:/app/temp
