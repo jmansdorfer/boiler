@@ -253,6 +253,7 @@ async def on_ready():
 
 
 @bot.tree.command(name='boil', description='Boil a user\'s profile picture!')
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(member='The user whose profile picture you want to boil (leave empty for yourself)')
 async def boil(interaction: discord.Interaction, member: discord.Member = None):
     """
