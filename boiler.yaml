@@ -2,7 +2,7 @@
 services:
   boilbot:
     build: .
-    container_name: discord-boil-bot
+    container_name: boiler-bot
     restart: unless-stopped
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
