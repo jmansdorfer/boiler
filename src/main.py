@@ -297,8 +297,8 @@ async def boil(interaction: discord.Interaction, user: discord.User = None):
 
     try:
         # Create cache directory if it doesn't exist
-        os.makedirs('cache', exist_ok=True)
-        os.makedirs('temp', exist_ok=True)
+        os.makedirs('../cache', exist_ok=True)
+        os.makedirs('../temp', exist_ok=True)
 
         # Get avatar hash for cache key
         avatar_hash = user.display_avatar.key
@@ -424,8 +424,8 @@ async def boilboard(interaction: discord.Interaction, user: discord.User = None)
 
     try:
         # Create cache directory if it doesn't exist
-        os.makedirs('cache', exist_ok=True)
-        os.makedirs('temp', exist_ok=True)
+        os.makedirs('../cache', exist_ok=True)
+        os.makedirs('../temp', exist_ok=True)
 
         # Get avatar hash for cache key
         avatar_hash = user.display_avatar.key
