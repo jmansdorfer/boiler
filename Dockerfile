@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 # Set working directory
 WORKDIR /app
@@ -8,8 +8,8 @@ RUN pip install uv
 
 # Copy project files
 COPY pyproject.toml .
-COPY main.py .
-COPY data/template_boiling.gif .
+COPY src/main.py .
+COPY data/ .
 
 # Install dependencies using uv
 RUN uv pip install --system -r pyproject.toml
