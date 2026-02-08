@@ -121,7 +121,7 @@ def replace_green_square_in_gif(
             frame_with_insert = frame
 
         # Convert back to P mode (palette) for smaller file size, matching original GIF format
-        frame_with_insert = frame_with_insert.convert('RGB').convert('P', palette=Palette.ADAPTIVE, colors=64)
+        frame_with_insert = frame_with_insert.convert('RGB').convert('P', palette=Palette.ADAPTIVE, colors=48)
 
         frames.append(frame_with_insert)
 
@@ -137,7 +137,7 @@ def replace_green_square_in_gif(
         loop=0,
         disposal=2,  # Clear frame before rendering next
         optimize=True,  # Enable optimization
-        colors=64  # Reduce color palette for smaller size
+        colors=48  # Reduce color palette for smaller size
     )
 
 
