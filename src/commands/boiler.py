@@ -175,7 +175,7 @@ async def boiler(
     try:
         # Get avatar hash for cache key
         avatar_hash = user.display_avatar.key
-        cache_file = f'cache/{user.id}_{avatar_hash}.gif'
+        cache_file = f'cache/boiler/{user.id}_{avatar_hash}.gif'
 
         # Check if cached version exists
         if os.path.exists(cache_file):

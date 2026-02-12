@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.commands.boiler import boiler
+from src.commands.framemog import framemogger
 
 
 logging.basicConfig(
@@ -23,6 +24,7 @@ BOT_TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
 
 # Paths to template GIFs with green square
 BOILER_TEMPLATE = Path("/app/templates/boiler_template.gif")
+FRAMEMOG_TEMPLATE = Path("/app/templates/framemog_template.gif")
 PET_TEMPLATE = Path("/app/templates/pet_template.gif")
 # BOILBOARD_DB = Path("/app/databases/boilboard.db")
 
@@ -76,6 +78,20 @@ async def boil(interaction: discord.Interaction, user: discord.User = None):
 
     await boiler(interaction, user, BOILER_TEMPLATE, logger)
     # await boiler(interaction, user, BOILER_TEMPLATE, BOILBOARD_DB, logger)
+
+
+@bot.tree.command(name='framemog', description='Framemog a user')
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.describe(user='The user you framemog')
+async def boil(interaction: discord.Interaction, user: discord.User = None):
+    """
+    Slash command to framemog someone.
+    Usage: /framemog @user
+    Works in servers, DMs, and group DMs!
+    """
+
+    await framemogger(interaction, user, FRAMEMOG_TEMPLATE, logger)
+    # await framemogger(interaction, user, BOILER_TEMPLATE, BOILBOARD_DB, logger)
 
 
 @bot.tree.command(name='pet', description='Pet a user\'s profile picture!')
