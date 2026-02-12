@@ -4,11 +4,12 @@ import logging
 from pathlib import Path
 import os
 import shutil
+import subprocess
 import sqlite3
 
 import discord
 import numpy as np
-from PIL import Image, ImageSequence
+from PIL import Image, ImageSequence, ImageFilter
 from PIL.Image import Palette
 
 
@@ -16,7 +17,10 @@ def replace_green_square_in_gif(
         boiler_template: Path,
         image_path,
         output_path,
-        size=None
+        size=None,
+        gifsicle_lossy=30,
+        blur_radius=0.5,
+        colors=60,
 ):
     """
     Replace green screen area in a GIF with a custom image.
@@ -26,6 +30,9 @@ def replace_green_square_in_gif(
         image_path: Path to image to insert
         output_path: Path to save output GIF
         size: Optional tuple (width, height) for image size. If None, auto-detect from green area
+        gifsicle_lossy: Lossy compression level for gifsicle (0-200, higher = smaller/lossier). Set to None to skip.
+        blur_radius: Gaussian blur radius applied to the insert image to reduce compression-hostile detail. Set to 0 to skip.
+        colors: Number of colors in the palette
     """
     # Load the template GIF and the image to insert
     template = Image.open(boiler_template)
@@ -52,9 +59,7 @@ def replace_green_square_in_gif(
             if green_count > max_green_pixels:
                 max_green_pixels = green_count
 
-            # Also track the maximum size seen
             if green_count > 0:
-                # Detect size for this frame
                 rows = np.any(test_mask, axis=1)
                 cols = np.any(test_mask, axis=0)
                 if rows.any() and cols.any():
@@ -67,31 +72,20 @@ def replace_green_square_in_gif(
     # Keep original image for per-frame resizing
     insert_image_original = insert_image.copy()
 
-    # Process each frame - resize image per frame to match green square size
-    frame_num = 0
+    # Process each frame
     for frame in ImageSequence.Iterator(template):
-        frame_num += 1
-
-        # Convert frame to RGBA
         frame = frame.convert('RGBA')
-
-        # Get frame as numpy array for color replacement
         frame_array = np.array(frame)
 
-        # Create mask for green pixels (more tolerant for compressed GIFs)
-        # Green channel is high, red and blue are low
         green_mask = (
-                (frame_array[:, :, 1] > 200) &  # Green channel very high (was 100)
-                (frame_array[:, :, 0] < 100) &  # Red channel low (was green_threshold)
-                (frame_array[:, :, 2] < 100)  # Blue channel low (was green_threshold)
+                (frame_array[:, :, 1] > 200) &
+                (frame_array[:, :, 0] < 100) &
+                (frame_array[:, :, 2] < 100)
         )
 
-        # Count green pixels in this frame
         green_count = np.sum(green_mask)
 
-        # Detect position AND size for THIS specific frame from the mask
         if green_count > 0:
-            # Find bounding box from the green mask
             rows = np.any(green_mask, axis=1)
             cols = np.any(green_mask, axis=0)
 
@@ -101,31 +95,30 @@ def replace_green_square_in_gif(
                 pos_this_frame = (int(x_min), int(y_min))
                 size_this_frame = (int(x_max - x_min + 1), int(y_max - y_min + 1))
 
-                # Resize the profile picture to match THIS frame's green size
-                insert_image_for_frame = insert_image_original.resize(size_this_frame, Image.Resampling.LANCZOS)
+                insert_image_for_frame = insert_image_original.resize(
+                    size_this_frame, Image.Resampling.LANCZOS
+                )
+
+                # Slight blur to reduce compression-hostile detail from the insert image
+                if blur_radius and blur_radius > 0:
+                    insert_image_for_frame = insert_image_for_frame.filter(
+                        ImageFilter.GaussianBlur(radius=blur_radius)
+                    )
 
                 result = frame.copy()
-
-                # Simply paste the insert image at the position
-                # The insert_image is already the right size (constant across all frames)
-                # We'll paste it, and it will show through where it fits
                 result.paste(insert_image_for_frame, pos_this_frame, insert_image_for_frame)
-
-                # Replace green pixels with the resized insert image
                 frame_with_insert = result
             else:
-                # No valid green area, just use the frame as-is
                 frame_with_insert = frame
         else:
-            # No green in this frame, don't add the image at all
             frame_with_insert = frame
 
         # Convert back to P mode (palette) for smaller file size, matching original GIF format
-        frame_with_insert = frame_with_insert.convert('RGB').convert('P', palette=Palette.ADAPTIVE, colors=60)
+        frame_with_insert = frame_with_insert.convert('RGB').convert(
+            'P', palette=Palette.ADAPTIVE, colors=colors
+        )
 
         frames.append(frame_with_insert)
-
-        # Preserve frame duration
         durations.append(frame.info.get('duration', 100))
 
     # Save as new GIF with optimization
@@ -135,10 +128,29 @@ def replace_green_square_in_gif(
         append_images=frames[1:],
         duration=durations,
         loop=0,
-        disposal=2,  # Clear frame before rendering next
-        optimize=True,  # Enable optimization
-        colors=60  # Reduce color palette for smaller size
+        disposal=2,
+        optimize=True,
+        colors=colors,
     )
+
+    if gifsicle_lossy is not None and shutil.which('gifsicle'):
+        try:
+            subprocess.run(
+                [
+                    'gifsicle',
+                    '--optimize=3',
+                    f'--lossy={gifsicle_lossy}',
+                    '--colors', str(colors),
+                    str(output_path),
+                    '-o', str(output_path),
+                ],
+                check=True,
+                capture_output=True,
+            )
+        except subprocess.CalledProcessError as e:
+            print(f"gifsicle optimization failed (non-fatal): {e.stderr.decode()}")
+    elif gifsicle_lossy is not None:
+        print("gifsicle not found on PATH — skipping post-processing optimization")
 
 
 async def boiler(

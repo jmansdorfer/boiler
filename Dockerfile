@@ -9,17 +9,15 @@ RUN pip install uv
 # Copy project files
 COPY pyproject.toml .
 
-# Install dependencies using uv
-RUN uv pip install --system --no-cache -r pyproject.toml
+RUN uv pip install --system -no-cache -r pyproject.toml && \
+    apt-get update && apt-get install -y gifsicle && rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /app/cache/boiler /app/cache/petter /app/temp
 
 # Copy application code
 COPY src/ ./src/
 
 # Copy templates (read-only data)
 COPY templates/ ./templates/
-
-# Create temp directory for bot operations
-RUN mkdir -p /app/cache/boiler /app/cache/petter /app/temp
 
 # Run the bot
 CMD ["python", "-m", "src.bot"]
