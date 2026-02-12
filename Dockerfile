@@ -12,10 +12,9 @@ COPY src/main.py .
 COPY data/ .
 
 # Install dependencies using uv
-RUN uv pip install --system -r pyproject.toml
-
-# Create temp directory for bot operations
-RUN mkdir -p temp
+RUN uv pip install --system -r pyproject.toml && \
+    apt-get update && apt-get install -y gifsicle && rm -rf /var/lib/apt/lists/* && \
+    mkdir -p temp
 
 # Run the bot
 CMD ["python", "main.py"]
