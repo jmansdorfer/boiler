@@ -175,7 +175,7 @@ async def boiler(
     try:
         # Get avatar hash for cache key
         avatar_hash = user.display_avatar.key
-        cache_file = f'cache/{user.id}_{avatar_hash}.gif'
+        cache_file = f'cache/boiler/{user.id}_{avatar_hash}.gif'
 
         # Check if cached version exists
         if os.path.exists(cache_file):
@@ -238,7 +238,7 @@ async def boiler(
         logger.info(f"Saved to cache: {cache_file}")
 
         # Clean up old cached versions for this user (different avatar hashes)
-        for old_cache in glob.glob(f'cache/{user.id}_*.gif'):
+        for old_cache in glob.glob(f'cache/boiler/{user.id}_*.gif'):
             if old_cache != cache_file:
                 try:
                     os.remove(old_cache)
