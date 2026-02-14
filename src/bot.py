@@ -34,40 +34,38 @@ COAL_EMOJI = "coal"  # Replace with your custom coal emoji name if needed (e.g.,
 COAL_THRESHOLD = 5
 coal_replied_messages = set()  # Track messages already replied to
 
+has_synced = False
 
 @bot.event
 async def on_ready():
+    global has_synced
     logger.info(f'{bot.user} has connected to Discord!')
     logger.info(f'bot is ready to rot brains')
 
-    # Sync slash commands to specific guilds for instant availability
+    if has_synced:
+        logger.info("Skipping sync - already synced this session")
+        return
+
+    has_synced = True
+
     try:
         # Parse comma-separated guild IDs from env var (e.g., "123,456,789")
         guild_ids_str = os.getenv('DISCORD_BOT_GUILD_IDS', '')
         guild_ids = [int(gid.strip()) for gid in guild_ids_str.split(',') if gid.strip()]
 
-        # Sync globally first for DMs (this makes commands available in DMs)
-        logger.info("Syncing commands globally for DM support...")
+        # Sync globally (works in both servers and DMs)
+        logger.info("Syncing commands globally...")
         global_synced = await bot.tree.sync()
         logger.info(f"Synced {len(global_synced)} command(s) globally")
 
-        if not guild_ids:
-            logger.info(guild_ids)
-            logger.warning("No guild IDs configured - only global sync performed")
-            return
-
-        # Also sync to specific guilds for instant availability in servers
-        synced_count = 0
+        # Clear guild-specific commands to prevent duplicates in the menu
         for guild_id in guild_ids:
             guild = discord.Object(id=guild_id)
-            # Clear old commands first to prevent duplicates
             bot.tree.clear_commands(guild=guild)
-            bot.tree.copy_global_to(guild=guild)
-            synced = await bot.tree.sync(guild=guild)
-            synced_count += len(synced)
-            logger.info(f"Synced {len(synced)} command(s) to guild {guild_id}")
+            await bot.tree.sync(guild=guild)
+            logger.info(f"Cleared guild-specific commands from {guild_id}")
 
-        logger.info(f"Total: Synced globally + to {len(guild_ids)} guild(s)")
+        logger.info(f"Total: Synced globally, cleared {len(guild_ids)} guild(s)")
     except Exception as e:
         logger.error(f"Failed to sync commands: {e}")
         logger.error(traceback.format_exc())
